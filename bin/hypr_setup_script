@@ -1,6 +1,13 @@
 #!/bin/bash
 
 # This can be called from .zprofile to setup configs when using something like ly or lemurs
+#
+# For example:
+#
+#                 if [ ! -n "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
+#                     [[ -f ~/bin/hypr_setup_script ]] && ~/bin/hypr_setup_script & disown
+#                 fi
+#
 # Note: Adjust the monitor names for the machine it is being run on.
 
 ${HOME}/bin/set_hypr_monitor_config \
