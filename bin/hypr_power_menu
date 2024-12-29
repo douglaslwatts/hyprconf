@@ -1,0 +1,22 @@
+#!/bin/bash
+
+entries="🗝 Lock\n⇠ Logout\n⭮ Reboot\n⏻ Poweroff\n⏾ Suspend"
+
+selected=$(echo -e $entries | wofi --width 250 --height 210 --gtk-dark --dmenu --cache-file /dev/null | awk '{print tolower($2)}')
+
+case $selected in
+  lock)
+    hyprlock;;
+  logout)
+      kill $(pgrep -f hypr_background_changer) &> /dev/null
+      kill $(pidof hypridle) &> /dev/null
+      hyprctl dispatch exit;;
+  reboot)
+    systemctl reboot;;
+  suspend)
+    hyprlock & disown
+    systemctl suspend;;
+  poweroff)
+    systemctl poweroff -i;;
+esac
+

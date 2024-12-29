@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# This script is not currently being used, as I am now using hypridle and hyprlock
+
+# This is a simple script to produce a lock image and lock the screen.
+#
+# Some neat things previously tried for a lock image are commented out here. Most are either not
+# sufficient or take too much CPU power for producing a lock image.
+#
+####################################################################################################
+# convert -blur 0x20 /usr/tmp/lock_screen.png /usr/tmp/lock_screen.png
+# convert -motion-blur 0x15 /usr/tmp/lock_screen.png /usr/tmp/lock_screen.png
+# convert -gaussian-blur 0x15 /usr/tmp/lock_screen.png /usr/tmp/lock_screen.png
+# convert /usr/tmp/lock_screen.png $HOME/Pictures/fedora-logo.png -gravity southwest -composite -matte /usr/tmp/lock_screen.png
+# convert /usr/tmp/lock_screen.png $HOME/Pictures/tux_with_background.png -gravity northeast -composite -matte /usr/tmp/lock_screen.png
+# convert /usr/tmp/lock_screen.png -composite -matte /usr/tmp/lock_screen.png
+####################################################################################################
+
+OG_IFS=$IFS
+IFS=$'\n'
+
+connected_monitors=($(hyprctl monitors | grep Monitor | cut -d' ' -f2))
+
+IFS=$OG_IFS
+
+i=0
+len=$(( ${#connected_monitors[@]} ))
+
+SWAY_LOCK_COMMAND='swaylock -f -c 000000 --ignore-empty-password --show-failed-attempts'
+
+while [ $i -lt $len ]; do
+    echo ${connected_monitors[$i]}
+    MONITOR=${connected_monitors[$i]}
+    MONITOR_IMAGE="/tmp/${MONITOR}.png"
+
+    grim -o $MONITOR $MONITOR_IMAGE
+    convert -blur 0x9 $MONITOR_IMAGE $MONITOR_IMAGE
+
+    SWAY_LOCK_COMMAND="$SWAY_LOCK_COMMAND --image ${connected_monitors[$i]}:/tmp/${connected_monitors[$i]}.png"
+
+    (( i++ ))
+done
+
+eval "$SWAY_LOCK_COMMAND"
+
+exit 0
+

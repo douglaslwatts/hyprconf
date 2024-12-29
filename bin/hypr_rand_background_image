@@ -1,0 +1,99 @@
+#!/bin/bash
+#
+# Choose a random image from a given background images directory upon each hyprland session. For use when
+# using Hyprland as a DE.
+#
+# NOTE: The script assumes you have a swww command in Hyprland config file as below:
+#
+#       exec-once = swww img /path/to/image_file
+#       
+#       and that the file specified in that command exists. If that is not the case make it so or 
+#       change the value of the variable SWWW_COMMAND in this script
+#
+ 
+# Prints a usage message and exits
+usage() {
+    echo "Usage: $0 <-d <background_images_dir>> [-f <hypr_config_file>]" >&2
+    echo -e "\tIf hyprland config file is given, it must also be a relative path from ${HOME}\n" >&2
+    echo -e "\tIf no hyprland config file is given, ${HOME}/.config/hypr/hyprland.conf is assumed\n" >&2
+
+    exit 1
+}
+
+# Recursively get a random file name from within a directory tree.
+#
+# Arg: $1 The name of the directory from which to get a file name
+# Arg: $2 The index within that directory to start with, if the name at that index is
+#         a file then return it (i.e., base case met), if it is a directory start recursion
+# Arg: $3 A default file to use in case of encountering an empty directory during
+#         recursion, i.e. a fall back to ensure the base case is eventually met
+get_random_image() {
+    local backgrounds_dir="$1"
+    local backgrounds_array=(${backgrounds_dir}/*)
+    local index=$2
+    local default_image="$3"
+
+    local file_or_dir="${backgrounds_array[${index}]}"
+
+    if [ ! -f "$file_or_dir" ] && [ ! -d "$file_or_dir" ]; then
+        file_or_dir="$default_image"
+    fi
+
+    if [ -d "$file_or_dir" ]; then
+        backgrounds_dir="$file_or_dir"
+        backgrounds_array=(${backgrounds_dir}/*)
+        local array_size="${#backgrounds_array[@]}"
+        local random_array_index=$(( $RANDOM % $array_size ))
+
+        file_or_dir="$(get_random_image $backgrounds_dir $random_array_index $default_image)"
+    fi
+
+    echo "$file_or_dir"
+}
+
+unset -v background_images_dir
+unset -v hypr_config_file
+
+# parse the command line args via getopts
+
+while getopts "d:f:" opt; do
+    case $opt in
+        d) background_images_dir="${HOME}/${OPTARG}";;
+        f) hypr_config_file="${HOME}/${OPTARG}";;
+        \?) echo "Invalid option: -${OPTARG}" >&2
+            usage;;
+        :) echo "Option -${OPTARG} requires an argument!" >&2
+            usage;;
+    esac
+done
+
+shift "$(( OPTIND - 1 ))"
+
+# Make sure that an image directory arg was provided
+
+if [ -z "$background_images_dir" ]; then
+    echo -e "Missing required Argument for background images directory!\n" >&2
+    usage
+else
+    readonly BACKGROUNDS_DIR="${background_images_dir}"
+fi
+
+# if a hyprland config file was provided, set that, otherwise use the default hyprland config location
+
+if [ -z "$hypr_config_file" ]; then
+    readonly HYPR_CONFIG_FILE="${HOME}/.config/hypr/hyprland.conf"
+else
+    readonly HYPR_CONFIG_FILE="${HOME}/${hypr_config_file}"
+fi
+
+readonly BACKGROUND_IMAGES_ARRAY=(${BACKGROUNDS_DIR}/*)
+readonly NUM_IMAGES="${#BACKGROUND_IMAGES_ARRAY[@]}"
+readonly RANDOM_INDEX=$(( $RANDOM % $NUM_IMAGES ))
+readonly DEFAULT_FILE_NAME="$(grep 'swww img' $HYPR_CONFIG_FILE | cut -d' ' -f5)"
+readonly FILE_NAME="$(get_random_image $BACKGROUNDS_DIR $RANDOM_INDEX $DEFAULT_FILE_NAME)"
+readonly SWWW_COMMAND="exec-once = swww img"
+
+sed -i "s:\(${SWWW_COMMAND}\) .*:\1 ${FILE_NAME}:" $HYPR_CONFIG_FILE
+
+exit 0
+

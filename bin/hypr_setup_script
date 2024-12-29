@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# This can be called from .zprofile to setup configs when using something like ly or lemurs
+# Note: Adjust the monitor names for the machine it is being run on.
+
+${HOME}/bin/set_hypr_monitor_config \
+    -l DP-1 -l 1920x1080@60 -l 0x0 -l 1 \
+    -c DP-2 -c 1920x1080@60 -c 1920x0 -c 1 \
+    -r HDMI-A-1 -r 1920x1080@60 -r 3840x0 -r 1 \
+    -b eDP-1 -b 1366x768@60 -b 5680x0 -b 1 \
+    -s l && \
+    ${HOME}/bin/hypr_rand_background_image -d Pictures/background_images/hypr & disown
+
+exit 0
+

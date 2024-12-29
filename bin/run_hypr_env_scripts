@@ -1,0 +1,10 @@
+#!/bin/bash
+
+pgrep -f hypr_low_batt &> /dev/null || \
+    ${HOME}/bin/hypr_low_batt & disown
+
+pgrep -f hypr_background_changer &> /dev/null || \
+    ${HOME}/bin/hypr_background_changer -d Pictures/background_images/hypr -m 1 & disown
+
+exit 0
+

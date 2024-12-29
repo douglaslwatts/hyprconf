@@ -1,0 +1,240 @@
+#!/bin/bash
+
+# Change the background image periodically, via swww, when using hyprland as a DE.
+# Script assumes that there is already a swww exec command in hyprland config prior to running this script
+# in the form:
+#               exec --no-startup-id feh --bg-scale /absolute/path/to/image_file
+#
+# and that the image specified in that command exists. If that is not the case either make it so or 
+# edit the needed grep | cut command in this script to match the swww command that is in the hyprland 
+# config file
+#
+# Required Args and the flag to provide them to:
+#
+#                       -d --> background images directory, relative to your home directory.
+#                                       If the files are in /home/username/Pictures/backgrounds/
+#                                       then it would be --> -d Pictures/backgrounds
+#                       One of -h, -m, -s with hours, minutes, or seconds respectively. This
+#                       should be a number of hours, minutes, or seconds for the interval between
+#                       image transitions
+#
+# Optional Arg and the flag to provide it to:
+#
+#                       -f --> The location of the hyprland config file if not the default location of
+#                       $HOME/.config/hypr/hyprland.conf
+
+# Prints a usage message and exits
+# Arg: $1 the name of this file
+usage() {
+    echo "Usage: $1 <-d <background_images_dir>> <-h|-m|-s <hours|minutes|seconds>> [-f <hypr_config_file>]" >&2
+    echo -e "\nNote:"
+    echo -e "\tA background image directory and either hours, minutes, or secconds must be given\n" >&2
+    echo -e "\tBackground Image Directory must be relative path from ${HOME}\n" >&2
+    echo -e "\tIf hyprland config file is given, it must also be a relative path from ${HOME}\n" >&2
+    echo -e "\tIf no hypr config file is given, ${HOME}/.config/hypr/hyprland.conf is assumed\n" >&2
+    echo -e "\tIf seconds are less than 30, 30 seconds will be used\n" >&2
+    echo -e "\tIf hours or minutes are less than 1, 1 will be used" >&2
+
+    exit 1
+}
+
+unset -v background_images_dir
+unset -v hours_between_transitions
+unset -v minutes_between_transitions
+unset -v seconds_between_transitions
+unset -v hypr_config_file
+unset -v num_transitions
+
+# parse the command line args via getopts
+
+while getopts "d:h:m:s:f:t:v" opt; do
+    case $opt in
+        d) background_images_dir="${HOME}/${OPTARG}";;
+        h) hours_between_transitions=${OPTARG};;
+        m) minutes_between_transitions=${OPTARG};;
+        s) seconds_between_transitions=${OPTARG};;
+        f) hypr_config_file="${HOME}/${OPTARG}";;
+        v) verbose=true;;
+        \?) echo "Invalid option: -${OPTARG}" >&2
+            usage ${0};;
+        :) echo "Option -${OPTARG} requires an argument!" >&2
+            usage ${0};;
+    esac
+done
+
+shift "$(( OPTIND - 1 ))"
+
+# Make sure that a image directory arg was provided
+
+if [ -z "$background_images_dir" ]; then
+    echo -e "Missing required Argument for background images directory!\n" >&2
+    usage $0
+else
+    readonly BACKGROUNDS_DIR="${background_images_dir}"
+fi
+
+# if an hyprland config file was provided, set that, otherwise use the default hyprland config location
+
+if [ -z "$hypr_config_file" ]; then
+    readonly HYPR_CONFIG_FILE="${HOME}/.config/hypr/hyprland.conf"
+else
+    readonly HYPR_CONFIG_FILE="${HOME}/${hypr_config_file}"
+fi
+
+# Make sure at least one time arg was given for a transition interval
+
+if [ -z "$hours_between_transitions" ] && [ -z "$minutes_between_transitions" ] &&
+   [ -z "$seconds_between_transitions" ]; then
+
+   echo "A time argument must be provided via -h, -m, or -s" >&2
+   usage $0
+fi
+
+# Make sure only one time art was given for a transitional interval
+
+if [[ ! -z "$hours_between_transitions" && ! -z "$minutes_between_transitions" && \
+     ! -z "$seconds_between_transitions" ]] || \
+   [[ ! -z "$hours_between_transitions" && ! -z "$minutes_between_transitions" ]] || \
+   [[ ! -z "$hours_between_transitions" && ! -z "$seconds_between_transitions" ]] || \
+   [[ ! -z "$minutes_between_transitions" && ! -z "$seconds_between_transitions" ]]; then
+
+   echo -e "Error! Only specify one of -h, -m, or -s please!\n" >&2
+   usage $0
+fi
+
+# Set the trantitional interval which was provided
+
+if [ ! -z "$hours_between_transitions" ]; then
+    if [ $hours_between_transitions -lt 1 ]; then
+        transition_wait_period="1h"
+    else
+        transition_wait_period="${hours_between_transitions}h"
+    fi
+elif [ ! -z "$minutes_between_transitions" ]; then
+    if [ $minutes_between_transitions -lt 1 ]; then
+        transition_wait_period="1m"
+    else
+        transition_wait_period="${minutes_between_transitions}m"
+    fi
+elif [ ! -z "$seconds_between_transitions" ]; then
+    if [ $seconds_between_transitions -lt 10 ]; then
+        transition_wait_period="10s"
+    else
+        transition_wait_period="${seconds_between_transitions}s"
+    fi
+fi
+
+# Make sure the images directory given actually exists
+
+if [ ! -d "$BACKGROUNDS_DIR" ]; then
+    echo -e "Error! Given background images directory:\n${BACKGROUNDS_DIR}" >&2
+    echo -e "does not exist or exists but is not a directory!\n" >&2
+    usage $0
+fi
+
+# Make sure we have permissions to read/write from/to the images directory given
+
+if [ ! -w "$BACKGROUNDS_DIR" ] || [ ! -r "$BACKGROUNDS_DIR" ]; then
+    echo -e "Error! You do not have permissions to read and/or write to:\n${BACKGROUNDS_DIR}\n" >&2
+    usage $0
+fi
+
+# get the current background image file absolute path from the hyprland config file
+
+readonly DEFAULT_FILE_NAME="$(grep 'swww img' $HYPR_CONFIG_FILE | cut -d' ' -f5)"
+old_file_name="$DEFAULT_FILE_NAME"
+
+# a variable to hold the previouse index in the file image array, as not to choose the same
+# picture that is already set when transitioning
+
+old_index=0
+
+# Recursively get a random file name from within a directory tree.
+#
+# Arg: $1 The name of the directory from which to get a file name
+# Arg: $2 The index within that directory to start with, if the name at that index is a file then
+#         return it (i.e., base case met), if it is a directory start recursion
+# Arg: $3 A default file to use in case of encountering an empty directory during
+#         recursion, i.e. a fall back to ensure the base case is eventually met
+get_random_image() {
+    local backgrounds_dir="$1"
+    local backgrounds_array=(${backgrounds_dir}/*)
+    local index=$2
+    local default_image="$3"
+
+    local file_or_dir="${backgrounds_array[${index}]}"
+
+    if [ ! -f "$file_or_dir" ] && [ ! -d "$file_or_dir" ]; then
+        file_or_dir="$default_image"
+    fi
+
+    if [ -d "$file_or_dir" ]; then
+        backgrounds_dir="$file_or_dir"
+        backgrounds_array=(${backgrounds_dir}/*)
+        local array_size="${#backgrounds_array[@]}"
+        local random_array_index=$(( $RANDOM % $array_size ))
+
+        file_or_dir="$(get_random_image $backgrounds_dir $random_array_index $default_image)"
+    fi
+
+    echo "$file_or_dir"
+}
+
+transition_types_array=('simple' 'grow' 'center' 'outer')
+last_transition_type_index=0
+
+while [ true ]; do
+    sleep $transition_wait_period
+
+    # build an array of absolute paths to the image files see how many there are and choose a random
+    # array index
+
+    background_images_array=(${BACKGROUNDS_DIR}/*)
+    num_images="${#background_images_array[@]}"
+    random_index=$(( $RANDOM % $num_images ))
+    old_index=0
+
+    # make sure to get an index that was not chosen last time around, but if only 1 item in
+    # background images directory, then choose it anyway
+
+    while [ $random_index -eq $old_index ] && [ $num_images -gt 1 ]; do
+        random_index=$(( $RANDOM % $num_images ))
+    done
+
+    # save the index chosen this time, to use next time in above check
+
+    old_index=$random_index
+
+    # get the absolute path to the new background image to transition to, from the array
+    # get the basename, file extension, and transition file directory for new background image
+
+    new_file_name="$(get_random_image $BACKGROUNDS_DIR $random_index $DEFAULT_FILE_NAME)"
+
+    # get the basename, file extension, and transition file directory for current background image
+
+    old_file_basename=$(basename $old_file_name | grep -oE '^[^\.]+')
+    old_file_extension="$(basename $old_file_name | grep -oE '[\.].*')"
+    old_file_transitions_dir="${TRANSITIONS_DIR}/${old_file_basename}"
+
+    new_file_basename=$(basename $new_file_name | grep -oE '^[^\.]+')
+    new_file_extension="$(basename $new_file_name | grep -oE '[\.].*')"
+    new_file_transitions_dir="${TRANSITIONS_DIR}/${new_file_basename}"
+
+    num_transition_types="${#transition_types_array[@]}"
+    random_transition_type_index=$(( $RANDOM % $num_transition_types ))
+
+    while [ $random_transition_type_index -eq $last_transition_type_index ] && [ $num_transition_types -gt 1 ]; do
+        random_transition_type_index=$(( $RANDOM % $num_transition_types ))
+    done
+
+    last_transition_type_index=$random_transition_type_index
+
+    swww img --transition-type ${transition_types_array[${random_transition_type_index}]} $new_file_name &
+
+    # save the new background image file as the old one for the next iteration
+
+    old_file_name="$new_file_name"
+done
+
+exit 0
+

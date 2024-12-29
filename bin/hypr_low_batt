@@ -1,0 +1,26 @@
+#!/bin/bash
+
+while [[ true ]]; do
+    sleep 2m
+
+    is_charging="$(/usr/bin/acpi -b | grep -io ' charging')"
+    is_full_batt="$(/usr/bin/acpi -b | grep -io ' full')"
+
+    if [[ "$is_charging" == "" && "$is_full_batt" == "" ]]; then
+        batt_level="$(/usr/bin/acpi -b | /usr/bin/awk -F' ' '{if ($6 == "remaining") {print $4}}' | /usr/bin/cut -d'%' -f1)"
+        if [[ "$batt_level" -le 10 ]]; then
+            /usr/bin/notify-send -u critical -t 5000 -i ${HOME}/Pictures/favicon.ico -- "LOW BATT! Locking and hibernating in 30 seconds!"
+            sleep 30s
+            if [[ "$(/usr/bin/acpi -b | /usr/bin/awk -F' ' '{if ($6 == "until" || $6 == "remaining") {print $3}}' | /usr/bin/cut -d',' -f1)" != "Charging" ]]; then
+                hyprlock &
+                sleep 1s
+                if [[ "$(/usr/bin/acpi -b | /usr/bin/awk -F' ' '{if ($6 == "until" || $6 == "remaining") {print $3}}' | /usr/bin/cut -d',' -f1)" != "Charging" ]]; then
+                    /usr/bin/systemctl hibernate
+                fi
+            fi
+        elif [[ "$batt_level" -le 15 ]]; then
+            /usr/bin/notify-send -u critical -t 5000 -i ${HOME}/Pictures/favicon.ico -- "Warning Low Battery!"
+        fi
+    fi
+done
+exit 0

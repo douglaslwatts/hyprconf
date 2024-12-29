@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# This script is not currently being used, as I am now using hypridle and hyprlock
+
+swayidle -w timeout 1500 "$HOME/bin/hypr_lock_script" \
+            timeout 1800 'systemctl suspend' \
+            before-sleep "$HOME/bin/hypr_lock_script" &
+
