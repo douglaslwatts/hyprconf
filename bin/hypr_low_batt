@@ -20,6 +20,8 @@ while [[ true ]]; do
             fi
         elif [[ "$batt_level" -le 15 ]]; then
             /usr/bin/notify-send -u critical -t 5000 -i ${HOME}/Pictures/favicon.ico -- "Warning Low Battery!"
+        elif [[ "$batt_level" -le 20 ]]; then
+            /usr/bin/notify-send -u critical -t 5000 -i ${HOME}/Pictures/favicon.ico -- "Battery ${batt_level}%! Charge soon!"
         fi
     fi
 done
