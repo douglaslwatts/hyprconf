@@ -167,20 +167,37 @@ secondary_monitor_left = cli_args.secondary_monitor == 'l'
 verbose = cli_args.verbose
 dry_run = cli_args.dry_run
 
+LEFT_MONITOR_NAME = left_monitor_configs[0] if left_monitor_configs else None
+CENTER_MONITOR_NAME = center_monitor_configs[0] if center_monitor_configs else None
+RIGHT_MONITOR_NAME = right_monitor_configs[0] if right_monitor_configs else None
+BUILTIN_MONITOR_NAME = builtin_monitor_configs[0] if builtin_monitor_configs else None
+
+LEFT_MONITOR_CONFIG_LINE_REGEX = re.compile(f'^(#)?monitor\\s*=\\s*{LEFT_MONITOR_NAME}.*$') \
+    if left_monitor_configs else None
+
+CENTER_MONITOR_CONFIG_LINE_REGEX = re.compile(f'^(#)?monitor\\s*=\\s*{CENTER_MONITOR_NAME}.*$') \
+    if center_monitor_configs else None
+
+RIGHT_MONITOR_CONFIG_LINE_REGEX = re.compile(f'^(#)?monitor\\s*=\\s*{RIGHT_MONITOR_NAME}.*$') \
+    if right_monitor_configs else None
+
+BUILTIN_MONITOR_CONFIG_LINE_REGEX = re.compile(f'^(#)?monitor\\s*=\\s*{BUILTIN_MONITOR_NAME}.*$') \
+    if builtin_monitor_configs else None
+
 ###### Gather and setup configs based on the status of connected and disconnected monitor(s) #######
 
 # Get monitor connection statuses
 
-BUILTIN_MONITOR_DIR_REGEX = re.compile(f'^\\S+{builtin_monitor_configs[0]}$') \
+BUILTIN_MONITOR_DIR_REGEX = re.compile(f'^\\S+{BUILTIN_MONITOR_NAME}$') \
     if builtin_monitor_configs else None
 
-LEFT_MONITOR_DIR_REGEX = re.compile(f'^\\S+{left_monitor_configs[0]}$')\
+LEFT_MONITOR_DIR_REGEX = re.compile(f'^\\S+{LEFT_MONITOR_NAME}$') \
     if left_monitor_configs else None
 
-CENTER_MONITOR_DIR_REGEX = re.compile(f'^\\S+{center_monitor_configs[0]}$')\
+CENTER_MONITOR_DIR_REGEX = re.compile(f'^\\S+{CENTER_MONITOR_NAME}$') \
     if center_monitor_configs else None
 
-RIGHT_MONITOR_DIR_REGEX = re.compile(f'^\\S+{right_monitor_configs[0]}$')\
+RIGHT_MONITOR_DIR_REGEX = re.compile(f'^\\S+{RIGHT_MONITOR_NAME}$') \
     if right_monitor_configs else None
 
 drm_path = Path(DRM_DIR)
@@ -210,22 +227,22 @@ for monitor_dir in monitor_dirs:
             builtin_monitor_connected = monitor_status == CONNECTED_STATUS
 
             if builtin_monitor_connected:
-                connected_monitor_names.append(builtin_monitor_configs[0])
+                connected_monitor_names.append(BUILTIN_MONITOR_NAME)
         elif LEFT_MONITOR_DIR_REGEX and LEFT_MONITOR_DIR_REGEX.match(monitor_dir):
             left_monitor_connected = monitor_status == CONNECTED_STATUS
 
             if left_monitor_connected:
-                connected_monitor_names.append(left_monitor_configs[0])
+                connected_monitor_names.append(LEFT_MONITOR_NAME)
         elif CENTER_MONITOR_DIR_REGEX and CENTER_MONITOR_DIR_REGEX.match(monitor_dir):
             center_monitor_connected = monitor_status == CONNECTED_STATUS
 
             if center_monitor_connected:
-                connected_monitor_names.append(center_monitor_configs[0])
+                connected_monitor_names.append(CENTER_MONITOR_NAME)
         elif RIGHT_MONITOR_DIR_REGEX and RIGHT_MONITOR_DIR_REGEX.match(monitor_dir):
             right_monitor_connected = monitor_status == CONNECTED_STATUS
 
             if right_monitor_connected:
-                connected_monitor_names.append(right_monitor_configs[0])
+                connected_monitor_names.append(RIGHT_MONITOR_NAME)
 
 if verbose:
     print(f'Connected monitor names => {connected_monitor_names}')
@@ -240,7 +257,7 @@ if left_monitor_connected and center_monitor_connected and right_monitor_connect
     if verbose:
         print('... all monitors connected')
 
-    waybar_position = f'{WAYBAR_OUTPUT_START}{center_monitor_configs[0]}{WAYBAR_OUTPUT_END}'
+    waybar_position = f'{WAYBAR_OUTPUT_START}{CENTER_MONITOR_NAME}{WAYBAR_OUTPUT_END}'
 elif not left_monitor_connected and center_monitor_connected and right_monitor_connected:
 
     if verbose:
@@ -251,9 +268,9 @@ elif not left_monitor_connected and center_monitor_connected and right_monitor_c
     center_monitor_configs[POSITION_COORDINATE_INDEX] = left_monitor_configs[POSITION_COORDINATE_INDEX]
 
     if secondary_monitor_left:
-        waybar_position = f'{WAYBAR_OUTPUT_START}{right_monitor_configs[0]}{WAYBAR_OUTPUT_END}'
+        waybar_position = f'{WAYBAR_OUTPUT_START}{RIGHT_MONITOR_NAME}{WAYBAR_OUTPUT_END}'
     else:
-        waybar_position = f'{WAYBAR_OUTPUT_START}{center_monitor_configs[0]}{WAYBAR_OUTPUT_END}'
+        waybar_position = f'{WAYBAR_OUTPUT_START}{CENTER_MONITOR_NAME}{WAYBAR_OUTPUT_END}'
 elif left_monitor_connected and not center_monitor_connected and right_monitor_connected:
 
     if verbose:
@@ -263,9 +280,9 @@ elif left_monitor_connected and not center_monitor_connected and right_monitor_c
     right_monitor_configs[POSITION_COORDINATE_INDEX] = center_monitor_configs[POSITION_COORDINATE_INDEX]
 
     if secondary_monitor_left:
-        waybar_position = f'{WAYBAR_OUTPUT_START}{right_monitor_configs[0]}{WAYBAR_OUTPUT_END}'
+        waybar_position = f'{WAYBAR_OUTPUT_START}{RIGHT_MONITOR_NAME}{WAYBAR_OUTPUT_END}'
     else:
-        waybar_position = f'{WAYBAR_OUTPUT_START}{left_monitor_configs[0]}{WAYBAR_OUTPUT_END}'
+        waybar_position = f'{WAYBAR_OUTPUT_START}{LEFT_MONITOR_NAME}{WAYBAR_OUTPUT_END}'
 elif left_monitor_connected and center_monitor_connected and not right_monitor_connected:
 
     if verbose:
@@ -274,16 +291,16 @@ elif left_monitor_connected and center_monitor_connected and not right_monitor_c
     builtin_monitor_configs[POSITION_COORDINATE_INDEX] = right_monitor_configs[POSITION_COORDINATE_INDEX]
 
     if secondary_monitor_left:
-        waybar_position = f'{WAYBAR_OUTPUT_START}{center_monitor_configs[0]}{WAYBAR_OUTPUT_END}'
+        waybar_position = f'{WAYBAR_OUTPUT_START}{CENTER_MONITOR_NAME}{WAYBAR_OUTPUT_END}'
     else:
-        waybar_position = f'{WAYBAR_OUTPUT_START}{left_monitor_configs[0]}{WAYBAR_OUTPUT_END}'
+        waybar_position = f'{WAYBAR_OUTPUT_START}{LEFT_MONITOR_NAME}{WAYBAR_OUTPUT_END}'
 elif left_monitor_connected and not center_monitor_connected and not right_monitor_connected:
 
     if verbose:
         print('... center and right monitors not connected')
 
     builtin_monitor_configs[POSITION_COORDINATE_INDEX] = center_monitor_configs[POSITION_COORDINATE_INDEX]
-    waybar_position = f'{WAYBAR_OUTPUT_START}{left_monitor_configs[0]}{WAYBAR_OUTPUT_END}'
+    waybar_position = f'{WAYBAR_OUTPUT_START}{LEFT_MONITOR_NAME}{WAYBAR_OUTPUT_END}'
 elif not left_monitor_connected and center_monitor_connected and not right_monitor_connected:
 
     if verbose:
@@ -291,7 +308,7 @@ elif not left_monitor_connected and center_monitor_connected and not right_monit
 
     builtin_monitor_configs[POSITION_COORDINATE_INDEX] = center_monitor_configs[POSITION_COORDINATE_INDEX]
     center_monitor_configs[POSITION_COORDINATE_INDEX] = left_monitor_configs[POSITION_COORDINATE_INDEX]
-    waybar_position = f'{WAYBAR_OUTPUT_START}{center_monitor_configs[0]}{WAYBAR_OUTPUT_END}'
+    waybar_position = f'{WAYBAR_OUTPUT_START}{CENTER_MONITOR_NAME}{WAYBAR_OUTPUT_END}'
 elif not left_monitor_connected and not center_monitor_connected and right_monitor_connected:
 
     if verbose:
@@ -299,21 +316,16 @@ elif not left_monitor_connected and not center_monitor_connected and right_monit
 
     builtin_monitor_configs[POSITION_COORDINATE_INDEX] = center_monitor_configs[POSITION_COORDINATE_INDEX]
     right_monitor_configs[POSITION_COORDINATE_INDEX] = left_monitor_configs[POSITION_COORDINATE_INDEX]
-    waybar_position = f'{WAYBAR_OUTPUT_START}{right_monitor_configs[0]}{WAYBAR_OUTPUT_END}'
+    waybar_position = f'{WAYBAR_OUTPUT_START}{RIGHT_MONITOR_NAME}{WAYBAR_OUTPUT_END}'
 elif not left_monitor_connected and not center_monitor_connected and not right_monitor_connected:
 
     if verbose:
         print('... No external monitors are connected')
 
     builtin_monitor_configs[POSITION_COORDINATE_INDEX] = left_monitor_configs[POSITION_COORDINATE_INDEX]
-    waybar_position = f'{WAYBAR_OUTPUT_START}{builtin_monitor_configs[0]}{WAYBAR_OUTPUT_END}'
+    waybar_position = f'{WAYBAR_OUTPUT_START}{BUILTIN_MONITOR_NAME}{WAYBAR_OUTPUT_END}'
 
 # Validate args for, and set monitor configuration file lines
-
-left_monitor = ''
-center_monitor = ''
-right_monitor = ''
-builtin_monitor = ''
 
 monitor_configs = [
     left_monitor_configs,
@@ -322,21 +334,19 @@ monitor_configs = [
     builtin_monitor_configs
 ]
 
-monitor_config_lines = []
+monitor_config_lines = {}
 
 for config in monitor_configs:
     if config:
         if not validate_monitor_config_args(config):
             exit(1)
 
-    if config[0] in connected_monitor_names:
-        monitor_config_lines.append(
-            f'monitor = {config[0]}, {config[1]}@{config[2]}, {config[3]}, {config[4]}\n'
-        )
-    else:
-        monitor_config_lines.append(
-            f'#monitor = {config[0]}, {config[1]}@{config[2]}, {config[3]}, {config[4]}\n'
-        )
+        if config[0] in connected_monitor_names:
+            monitor_config_lines[config[0]] = \
+                f'monitor = {config[0]}, {config[1]}@{config[2]}, {config[3]}, {config[4]}\n'
+        else:
+            monitor_config_lines[config[0]] = \
+                f'#monitor = {config[0]}, {config[1]}@{config[2]}, {config[3]}, {config[4]}\n'
 
 if verbose:
 
@@ -372,3 +382,17 @@ else:
 with open(HYPR_CONFIG_FILE, 'r') as hypr_config_file,\
         open(HYPR_CONFIG_TMP_FILE,'w') as hypr_config_tmp_file:
     print('TODO: Write configs for Hyprland based on the currently connected monitors to file')
+
+    for line in hypr_config_file:
+        if LEFT_MONITOR_CONFIG_LINE_REGEX and LEFT_MONITOR_CONFIG_LINE_REGEX.match(line):
+            hypr_config_tmp_file.write(monitor_config_lines[LEFT_MONITOR_NAME])
+        elif CENTER_MONITOR_CONFIG_LINE_REGEX and CENTER_MONITOR_CONFIG_LINE_REGEX.match(line):
+            hypr_config_tmp_file.write(monitor_config_lines[CENTER_MONITOR_NAME])
+        elif RIGHT_MONITOR_CONFIG_LINE_REGEX and RIGHT_MONITOR_CONFIG_LINE_REGEX.match(line):
+            hypr_config_tmp_file.write(monitor_config_lines[RIGHT_MONITOR_NAME])
+        elif BUILTIN_MONITOR_CONFIG_LINE_REGEX and BUILTIN_MONITOR_CONFIG_LINE_REGEX.match(line):
+            hypr_config_tmp_file.write(monitor_config_lines[BUILTIN_MONITOR_NAME])
+
+
+        else:
+            hypr_config_tmp_file.write(line)
