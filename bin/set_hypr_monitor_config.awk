@@ -1,3 +1,7 @@
+# NOTE: This and set_hypr_monitor_config are not currently used, as they have been replaced by
+#       bin/set_hypr_monitor_config.py. They are still here because they do work nicely, and I just
+#       don't want to delete them :)
+
 BEGIN {
     left_monitor_config = "monitor = "left_monitor", "left_monitor_res_rate", "left_monitor_placement", "left_monitor_scaling;
 

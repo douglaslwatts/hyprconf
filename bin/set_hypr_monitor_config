@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# NOTE: This and set_hypr_monitor_config.awk are not currently used, as they have been replaced by
+#       bin/set_hypr_monitor_config.py. They are still here because they do work nicely, and I just
+#       don't want to delete them :)
+
 # Set the monitor layout based on which monitors are connected when using hyprland as DE. call this
 # prior to calling the Hyprland command. For example:
 #
