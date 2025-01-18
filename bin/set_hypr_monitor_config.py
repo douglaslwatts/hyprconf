@@ -11,6 +11,17 @@
 #       be read from /sys/class/drm/card[x-monitor-name]/modes, but I have not found a way to read
 #       the available refresh rates for those modes yet. This setup has a lot of room for improvements.
 
+# TODO: * Pull functions and appropriate constants out of this script into a separate file and
+#         and import that here.
+#       * Create a script that also imports the above mentioned functionality, regularly checks
+#         for newly connected monitors, calls this script when a new monitor is detected,
+#         and restarts the Waybar if it should switch to a different monitor. The change to the
+#         Hyprland config would take effect automatically, so no action needed there. To be
+#         very responsive, it would be kind of like the bin/hypr_low_batt script but with a much
+#         shorter interval in the forever loop. It just needs to read some files to see what
+#         monitor ports have a connected status, so I wonder if it is okay to just set the interval
+#         at one second.
+
 import argparse
 import os
 import sys
