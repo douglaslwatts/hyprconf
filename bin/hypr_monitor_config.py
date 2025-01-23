@@ -15,8 +15,6 @@ STATUS_FILE = 'status'
 MONITOR_DIR_REGEX = re.compile(f'^{DRM_DIR}/card[0-9]-\\S+$')
 CONNECTED_STATUS = 'connected'
 
-POSITION_COORDINATE_INDEX = 3
-
 
 class HyprMonitor(object):
 
@@ -306,8 +304,7 @@ class HyprMonitorConfig(object):
 
 
     def get_new_config_line(self, first_workspace: int, first_workspace_is_on_new_monitor: bool,
-                            monitor_name: str, workspace_config_line: str) -> (
-            str):
+                            monitor_name: str, workspace_config_line: str) -> str:
         first_workspace_regex = re.compile(f'^workspace\\s*=\\s*{first_workspace}.*$')
 
         new_config_line = re.sub(
