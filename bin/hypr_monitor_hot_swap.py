@@ -7,6 +7,9 @@
 #       anything I can do about it anyway. The config is set up correctly by these scripts, it just takes
 #       Hyprland a bit to sort out the new workspace locations based on the newly connected/disconnected
 #       monitor(s).
+#       UPDATE: Switching to the first workspace that should be on each monitor causes Hyprland to correct
+#               the workspace to monitor mapping based on the changes to the config file after a hot swap
+#               is triggered by connecting or disconnecting an external monitor.
 
 import argparse
 import os
