@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+# TODO: Add top of file comment
+
+# NOTE: bin/run_waybar.sh must be running for the Waybar to move to the correct monitor based on the config
+#       change made in a hot swap, i.e. instead of "exec-once = waybar", use "exec-once = ~/bin/run_waybar.sh"
+
 # TODO: Continue live use of this for extended testing. When a monitor is plugged/unplugged, and the config is
 #       updated based on that, Hyprland gets temporarily confused about which workspace is on wich monitor.
 #       From initial testing, Hyprland does sort it out and get the workspaces right based on the new config,
