@@ -2,19 +2,20 @@
 
 # TODO: Add top of file comment
 
-# NOTE: bin/run_waybar.sh must be running for the Waybar to move to the correct monitor based on the config
-#       change made in a hot swap, i.e. instead of "exec-once = waybar", use "exec-once = ~/bin/run_waybar.sh"
+# NOTE:
+#
+# bin/run_waybar.sh must be running for the Waybar to move to the correct monitor based on the config
+# change made in a hot swap, i.e. instead of "exec-once = waybar", use "exec-once = ~/bin/run_waybar.sh"
 
-# TODO: Continue live use of this for extended testing. When a monitor is plugged/unplugged, and the config is
-#       updated based on that, Hyprland gets temporarily confused about which workspace is on wich monitor.
-#       From initial testing, Hyprland does sort it out and get the workspaces right based on the new config,
-#       but only after switching through the workspaces. I think I can live with it, and there is not likely
-#       anything I can do about it anyway. The config is set up correctly by these scripts, it just takes
-#       Hyprland a bit to sort out the new workspace locations based on the newly connected/disconnected
-#       monitor(s).
-#       UPDATE: Switching to the first workspace that should be on each monitor causes Hyprland to correct
-#               the workspace to monitor mapping based on the changes to the config file after a hot swap
-#               is triggered by connecting or disconnecting an external monitor.
+# Note:
+#
+# Hyprland gets temporarily confused about which workspace is on which monitor after plugging in a
+# or unplugging a monitor, i.e. hot swapping the monitor configuration. The config is set up
+# correctly by these scripts, it just takes Hyprland a bit to sort out the new workspace locations
+# based on the newly connected/disconnected monitor(s). I have found that switching to the first
+# workspace that should be on each monitor causes Hyprland to correct the workspace to monitor mapping
+# based on the changes to the config file after a hot swap is triggered by connecting or disconnecting
+# an external monitor.
 
 import argparse
 import os
