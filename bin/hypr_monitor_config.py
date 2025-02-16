@@ -1,5 +1,7 @@
 import re
 import sys
+
+from re import Pattern
 from pathlib import Path
 
 WAYBAR_OUTPUT_START = '    "output": ["'
@@ -136,6 +138,12 @@ class HyprMonitorConfig(object):
     _monitor_names: list[str]
     _monitors: list[HyprMonitor]
     _waybar_position: str
+    _builtin_monitor_dir_regex: Pattern[str] | None
+    _left_monitor_dir_regex: Pattern[str] | None
+    _center_monitor_dir_regex: Pattern[str] | None
+    _right_monitor_dir_regex: Pattern[str] | None
+    _drm_path: Path
+    _monitor_dirs: list[str]
 
 
     def __init__(self, left_monitor: HyprMonitor = None, center_monitor: HyprMonitor = None,
@@ -150,14 +158,33 @@ class HyprMonitorConfig(object):
         self._when_external_connected_disable_builtin = when_external_connected_disable_builtin
 
         monitors = [
-            left_monitor,
-            center_monitor,
-            right_monitor,
-            builtin_monitor
-        ]
+                left_monitor,
+                center_monitor,
+                right_monitor,
+                builtin_monitor
+            ]
 
         self._monitor_names = [monitor.monitor_name for monitor in monitors if monitor]
         self._monitors = [monitor for monitor in monitors if monitor]
+
+        self._builtin_monitor_dir_regex = re.compile(f'^\\S+{self._builtin_monitor.monitor_name}$') \
+            if self._builtin_monitor else None
+
+        self._left_monitor_dir_regex = re.compile(f'^\\S+{self._left_monitor.monitor_name}$') \
+            if self._left_monitor else None
+
+        self._center_monitor_dir_regex = re.compile(f'^\\S+{self._center_monitor.monitor_name}$') \
+            if self._center_monitor else None
+
+        self._right_monitor_dir_regex = re.compile(f'^\\S+{self._right_monitor.monitor_name}$') \
+            if self._right_monitor else None
+
+        self._drm_path = Path(DRM_DIR)
+
+        self._monitor_dirs = [
+                str(dir_name) for dir_name in self._drm_path.iterdir()
+                if dir_name.is_dir() and MONITOR_DIR_REGEX.match(str(dir_name))
+            ]
 
 
     @property
@@ -393,27 +420,44 @@ class HyprMonitorConfig(object):
                                         workspace_config_line)
 
 
+    def any_monitor_connection_changes(self) -> bool:
+        monitor_connection_changes = False
+
+        for monitor_dir in self._monitor_dirs:
+
+            with (open(f'{monitor_dir}/{STATUS_FILE}', 'r') as file):
+                monitor_status = file.read().strip()
+
+                # NOTE: Often, the name assigned to the laptop's builtin monitor will be a superset of one
+                #       or more of the names assigned to external monitors, so checking it first here to
+                #       avoid a false match.
+
+                if self._builtin_monitor_dir_regex and self._builtin_monitor_dir_regex.match(monitor_dir):
+                    monitor_connection_changes = \
+                        self._builtin_monitor.connected and monitor_status != CONNECTED_STATUS \
+                        or not self._builtin_monitor.connected and monitor_status == CONNECTED_STATUS
+                elif self._left_monitor_dir_regex and self._left_monitor_dir_regex.match(monitor_dir):
+                    monitor_connection_changes = \
+                        self._left_monitor.connected and monitor_status != CONNECTED_STATUS \
+                        or not self._left_monitor.connected and monitor_status == CONNECTED_STATUS
+                elif self._center_monitor_dir_regex and self._center_monitor_dir_regex.match(monitor_dir):
+                    monitor_connection_changes = \
+                        self._center_monitor.connected and monitor_status != CONNECTED_STATUS \
+                        or not self._center_monitor.connected and monitor_status == CONNECTED_STATUS
+                elif self._right_monitor_dir_regex and self._right_monitor_dir_regex.match(monitor_dir):
+                    monitor_connection_changes = \
+                        self._right_monitor.connected and monitor_status != CONNECTED_STATUS \
+                        or not self._right_monitor.connected and monitor_status == CONNECTED_STATUS
+
+            if monitor_connection_changes:
+                break
+
+        return monitor_connection_changes
+
+
     def set_connected_monitor_configs(self) -> list[str]:
-        builtin_monitor_dir_regex = re.compile(f'^\\S+{self._builtin_monitor.monitor_name}$') \
-            if self._builtin_monitor else None
 
-        left_monitor_dir_regex = re.compile(f'^\\S+{self._left_monitor.monitor_name}$') \
-            if self._left_monitor else None
-
-        center_monitor_dir_regex = re.compile(f'^\\S+{self._center_monitor.monitor_name}$') \
-            if self._center_monitor else None
-
-        right_monitor_dir_regex = re.compile(f'^\\S+{self._right_monitor.monitor_name}$') \
-            if self._right_monitor else None
-
-        drm_path = Path(DRM_DIR)
-
-        monitor_dirs = [
-            str(dir_name) for dir_name in drm_path.iterdir()
-            if dir_name.is_dir() and MONITOR_DIR_REGEX.match(str(dir_name))
-        ]
-
-        for monitor_dir in monitor_dirs:
+        for monitor_dir in self._monitor_dirs:
 
             with open(f'{monitor_dir}/{STATUS_FILE}', 'r') as file:
                 monitor_status = file.read().strip()
@@ -422,13 +466,13 @@ class HyprMonitorConfig(object):
                 #       or more of the names assigned to external monitors, so checking it first here to
                 #       avoid a false match.
 
-                if builtin_monitor_dir_regex and builtin_monitor_dir_regex.match(monitor_dir):
+                if self._builtin_monitor_dir_regex and self._builtin_monitor_dir_regex.match(monitor_dir):
                     self._builtin_monitor.connected = monitor_status == CONNECTED_STATUS
-                elif left_monitor_dir_regex and left_monitor_dir_regex.match(monitor_dir):
+                elif self._left_monitor_dir_regex and self._left_monitor_dir_regex.match(monitor_dir):
                     self._left_monitor.connected = monitor_status == CONNECTED_STATUS
-                elif center_monitor_dir_regex and center_monitor_dir_regex.match(monitor_dir):
+                elif self._center_monitor_dir_regex and self._center_monitor_dir_regex.match(monitor_dir):
                     self._center_monitor.connected = monitor_status == CONNECTED_STATUS
-                elif right_monitor_dir_regex and right_monitor_dir_regex.match(monitor_dir):
+                elif self._right_monitor_dir_regex and self._right_monitor_dir_regex.match(monitor_dir):
                     self._right_monitor.connected = monitor_status == CONNECTED_STATUS
 
         if self._when_external_connected_disable_builtin and self.any_external_monitors_connected():

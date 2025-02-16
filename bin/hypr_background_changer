@@ -180,6 +180,8 @@ get_random_image() {
     echo "$file_or_dir"
 }
 
+# Put your favorite swww transition types in this array
+
 transition_types_array=('simple' 'grow' 'center' 'outer')
 last_transition_type_index=0
 
@@ -237,4 +239,3 @@ while [ true ]; do
 done
 
 exit 0
-

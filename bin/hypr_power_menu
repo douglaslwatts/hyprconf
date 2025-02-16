@@ -9,6 +9,8 @@ case $selected in
     hyprlock;;
   logout)
       kill $(pgrep -f hypr_background_changer) &> /dev/null
+      kill $(pgrep -f run_waybar.sh) &> /dev/null
+      kill $(pgrep -f hypr_monitor_hot_swap.py) &> /dev/null
       kill $(pidof hypridle) &> /dev/null
       hyprctl dispatch exit;;
   reboot)

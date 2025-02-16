@@ -9,14 +9,15 @@
 #                 fi
 #
 # Note: Adjust the monitor names for the machine it is being run on.
-${HOME}/bin/set_hypr_monitor_config.py \
-    -l DP-1 1920x1080 60 0x0 1 \
+
+${HOME}/bin/hypr_rand_background_image -d Pictures/background_images/hypr && \
+${HOME}/bin/hypr_monitor_hot_swap.py \
+    -l DP-1 1920x1080 75 0x0 1 \
     -c DP-2 1920x1080 60 1920x0 1 \
-    -r HDMI-A-1 1920x1080 60 3840x0 1 \
+    -r HDMI-A-1 1920x1080 75 3840x0 1 \
     -b eDP-1 1366x768 60 5680x0 1 \
     -s l \
-    -w && \
-    ${HOME}/bin/hypr_rand_background_image -d Pictures/background_images/hypr & disown
+    -w & disown
 
 exit 0
 
