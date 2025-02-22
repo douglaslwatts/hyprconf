@@ -478,6 +478,8 @@ class HyprMonitorConfig(object):
         if self._when_external_connected_disable_builtin and self.any_external_monitors_connected():
             self._builtin_monitor.disabled = True
 
+        self._builtin_monitor.disabled = self.any_external_monitors_connected()
+
         self.set_monitor_position_coordinates()
 
         return [monitor.monitor_name for monitor in self.monitors if monitor.connected]
